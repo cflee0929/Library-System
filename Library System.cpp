@@ -1,162 +1,151 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #define member_file "member.txt"
 #define book_file "book.txt"
-#define data_file "data.txt"
+#define record_file "record.txt"
 
-//會員資料結構
+time_t t;
+struct tm *TIME;
+
+/*資料結構*/
 class member{
-    friend class LinkedList;
+friend class LinkedList;
 private:
     int id;                 //會員編號
-    char name[20];          //會員姓名
-    char birthday[20];      //會員生日
-    char id_number[20];     //會員身份證字號
-    char phone[20];         //會員電話
-    char email[40];         //會員信箱
-    int borrow;             //會員借閱書籍數量，每位會員借閱上限10本
-    //char borrowBook[5][20]; //會員借閱書籍書名
-
-    member *pre;
+    char name[20];          //姓名
+    char birthday[20];      //生日
+    char id_number[20];     //身份證字號
+    char phone[20];         //電話
+    char email[40];         //信箱
+    int num_borrow;         //已借數量
     member *next;
 };
 
-//書籍資料結構
 class book{
-    friend class LinkedList;
+friend class LinkedList;
 private:
-    int id;                 //書籍編號
-    char name[20];          //書籍書名
-    char publisher[20];     //書籍出版社
-    char publish_date[40];  //書籍出版日期
-    int state;              //書籍可借狀態，0為已借出，1為可借
-
-    book *pre;
+    int id;                 //館藏編號
+    char name[20];          //書名
+    char ISBN[20];          //ISBN
+    char publish_date[40];  //出版日期
+    char publisher[20];     //出版社
+    int state;              //狀態: 0為已借出，1為未借出
     book *next;
 };
 
-//借閱資料結構
-class data{
-    friend class LinkedList;
+class record{
+friend class LinkedList;
 private:
-    int id;                 //借閱資料編號
-    char member_name[20];   //借閱資料會員
-    int book_number;        //借閱資料書籍數量
-    //int book_id[5];         //借閱資料書籍書名
-
-    data *pre;
-    data *next;
+    int id;                 //借還記錄編號
+    int member_id;          //會員編號
+    int book_id;            //館藏編號
+    int time[3];            //借還時間，年月日
+    record *next;
 };
 
-//串列資料處理
 class LinkedList{
 public:
     LinkedList();
     ~LinkedList();
-    void release(member *mp, book *bp, data *dp);
 
-    void load_member();     /*讀檔*/
+    void load_member();
     void load_book();
-    void load_data();
-    void save_member();     /*寫檔*/
+    void load_record();
+
+    void save_member();
     void save_book();
-    void save_data();
-    int member_login();    /*帳號登入*/
-    int manager_login();
+    void save_record();
+    //登入
+    void login_member();
+    void login_manager();
+    //操作
+    void member_interface(member *mp);
+    void manager_interface();
 
-    void insert_member();   /*新增*/
+    void insert_member();
     void insert_book();
-    void insert_data();
-    void delete_member();   /*刪除*/
+    void insert_record(member *mp);
+
+    void delete_member();
     void delete_book();
-    void delete_data();
-    void show_member();     /*顯示*/
+    void delete_record(member *mp);
+
+    void show_member();
     void show_book();
-    void show_data();
+    void show_record();
 
-    void find_member();     /*尋找*/
-    void find_book();
-    void find_data();
-
+    void check_member_record(member *mp);
+    book *find_book_byid(int book_id);
+    book *find_book_byname(int book_id);
 private:
     FILE *fp;
-
     member *member_head, *member_tail;
     book *book_head, *book_tail;
-    data *data_head, *data_tail;
-
-    int num_member, num_book, num_data;     //紀錄會員、書籍、借閱資料目前數量
-    int sn_member, sn_book, sn_data;        //紀錄會員、書籍、借閱資料編號
+    record *record_head, *record_tail;
+    int sn_member, sn_book, sn_record;        //編號
+    int num_member, num_book, num_record;     //數量
 };
-//construct
-LinkedList::LinkedList(){                   //系統建構初始值
+//建構解構
+LinkedList::LinkedList(){
     member_head = member_tail = NULL;
     book_head = book_tail = NULL;
-    data_head = data_tail = NULL;
-    num_member = num_book = num_data = 0;
-    sn_member = sn_book = sn_data = 0;
+    record_head = record_tail = NULL;
+    num_member = num_book = num_record = 0;
 }
-//destruct
+
 LinkedList::~LinkedList(){
-    release(member_head, book_head, data_head);
-}
-//release memory
-void LinkedList::release(member *mp, book *bp, data *dp){
-    member *mp4d;
-    book *bp4d;
-    data *dp4d;
+    member *mp, *mp4d;
+    book *bp, *bp4d;
+    record *rp, *rp4d;
 
-    while(mp != NULL){
-        mp4d = mp->next;
-        if(mp4d != NULL){
-            mp4d->pre = NULL;    //防野指標
-        }
-        free(mp);
-        mp = mp4d;
+    mp4d = member_head;
+    while(mp4d=NULL){
+        mp = mp4d->next;
+        free(mp4d);
+        mp4d = mp;
     }
-    while(bp != NULL){
-        bp4d = bp->next;
-        if(bp4d != NULL){
-            bp4d->pre = NULL;    //防野指標
-        }
-        free(bp);
-        bp = bp4d;
+
+    bp4d = book_head;
+    while(bp4d!=NULL){
+        bp = bp4d->next;
+        free(bp4d);
+        bp4d = bp;
     }
-    while(dp != NULL){
-        dp4d = dp->next;
-        if(dp4d != NULL){
-            dp4d->pre = NULL;    //防野指標
-        }
-        free(dp);
-        dp = dp4d;
+
+    rp4d = record_head;
+    while(rp4d!=NULL){
+        rp = rp4d->next;
+        free(rp4d);
+        rp4d = rp;
     }
 }
-
-/*讀檔*/
+//讀取
 void LinkedList::load_member(){
     member *new_member;
 
     fp = fopen(member_file, "r");
-    fscanf(fp, "%d", &num_member);                      //讀取第一行，得num_member
-    for(int i=0;i<num_member;i++){                      //讀取num_member筆會員資料
-        new_member = (member *)malloc(sizeof(member));
-        fscanf(fp, "%d", &new_member->id);
-        fscanf(fp, "%s", new_member->name);
-        fscanf(fp, "%s", new_member->birthday);
-        fscanf(fp, "%s", new_member->id_number);
-        fscanf(fp, "%s", new_member->phone);
-        fscanf(fp, "%s", new_member->email);
-        fscanf(fp, "%d", &new_member->borrow);
-        new_member->pre = NULL;
-        new_member->next = NULL;
+    fscanf(fp, "%d", &num_member);
+    if(fp){
+        for(int i=0;i<num_member;i++){
+            new_member = (member *)malloc(sizeof(member));
 
-        if(member_head == NULL){
-            member_head = member_tail = new_member;
-        }else{
-            member_tail->next = new_member;             //連結
-            new_member->pre = member_tail;
-            member_tail = new_member;
+            fscanf(fp, "%d", &new_member->id);
+            fscanf(fp, "%s", new_member->name);
+            fscanf(fp, "%s", new_member->birthday);
+            fscanf(fp, "%s", new_member->id_number);
+            fscanf(fp, "%s", new_member->phone);
+            fscanf(fp, "%s", new_member->email);
+            fscanf(fp, "%d", &new_member->num_borrow);
+            new_member->next = NULL;
+
+            if(member_head == NULL){
+                member_head = member_tail = new_member;
+            }else{
+                member_tail->next = new_member;
+                member_tail = new_member;
+            }
         }
     }
     fclose(fp);
@@ -166,29 +155,59 @@ void LinkedList::load_book(){
     book *new_book;
 
     fp = fopen(book_file, "r");
-    fscanf(fp, "%d", &num_book);                        //讀取第一行，得num_book
-    for(int i=0;i<num_book;i++){                        //讀取num_book筆書籍資料
-        new_book = (book *)malloc(sizeof(book));
-        fscanf(fp, "%d", &new_book->id);
-        fscanf(fp, "%s", new_book->name);
-        fscanf(fp, "%s", new_book->publisher);
-        fscanf(fp, "%s", new_book->publish_date);
-        fscanf(fp, "%d", &new_book->state);
-        new_book->pre = NULL;
-        new_book->next = NULL;
+    fscanf(fp, "%d", &num_book);
+    if(fp){
+        for(int i=0;i<num_book;i++){
+            new_book = (book *)malloc(sizeof(book));
 
-        if(book_head == NULL){
-            book_head = book_tail = new_book;
-        }else{
-            book_tail->next = new_book;                 //連結
-            new_book->pre = book_tail;
-            book_tail = new_book;
+            fscanf(fp, "%d", &new_book->id);
+            fscanf(fp, "%s", new_book->name);
+            fscanf(fp, "%s", new_book->ISBN);
+            fscanf(fp, "%s", new_book->publish_date);
+            fscanf(fp, "%s", new_book->publisher);
+            fscanf(fp, "%d", &new_book->state);
+            new_book->next = NULL;
+
+            if(book_head == NULL){
+                book_head = book_tail = new_book;
+            }else{
+                book_tail->next = new_book;
+                book_tail = new_book;
+            }
         }
     }
     fclose(fp);
 }
 
-/*寫檔*/
+void LinkedList::load_record(){
+    record *new_record;
+    int data;
+
+    fp = fopen(record_file, "r");
+    fscanf(fp, "%d", &num_record);
+    if(fp){
+        for(int i=0;i<num_record;i++){
+            new_record = (record *)malloc(sizeof(record));
+            fscanf(fp, "%d", &new_record->id);
+            fscanf(fp, "%d", &new_record->member_id);
+            fscanf(fp, "%d", &new_record->book_id);
+            for(int i=0;i<3;i++){
+                fscanf(fp, "%d/", &data);
+                new_record->time[i] = data;
+            }
+            new_record->next = NULL;
+
+            if(record_head == NULL){
+                record_head = record_tail = new_record;
+            }else{
+                record_tail->next = new_record;
+                record_tail = new_record;
+            }
+        }
+    }
+    fclose(fp);
+}
+//儲存
 void LinkedList::save_member(){
     member *ptr = member_head;
 
@@ -202,7 +221,7 @@ void LinkedList::save_member(){
         fprintf(fp, "%s\n", ptr->id_number);
         fprintf(fp, "%s\n", ptr->phone);
         fprintf(fp, "%s\n", ptr->email);
-        fprintf(fp, "%d\n", ptr->borrow);
+        fprintf(fp, "%d\n", ptr->num_borrow);
         ptr = ptr->next;
     }
     fclose(fp);
@@ -217,256 +236,317 @@ void LinkedList::save_book(){
     while(ptr != NULL){
         fprintf(fp, "%d\n", ptr->id);
         fprintf(fp, "%s\n", ptr->name);
-        fprintf(fp, "%s\n", ptr->publisher);
+        fprintf(fp, "%s\n", ptr->ISBN);
         fprintf(fp, "%s\n", ptr->publish_date);
+        fprintf(fp, "%s\n", ptr->publisher);
         fprintf(fp, "%d\n", ptr->state);
         ptr = ptr->next;
     }
     fclose(fp);
 }
 
-/*登入*/
-int LinkedList::member_login(){
+void LinkedList::save_record(){
+    record *ptr = record_head;
+
+    fp = fopen(record_file, "w");
+    fprintf(fp, "%d\n", num_record);
+
+    while(ptr != NULL){
+        fprintf(fp, "%d\n", ptr->id);
+        fprintf(fp, "%d\n", ptr->member_id);
+        fprintf(fp, "%d\n", ptr->book_id);
+        for(int i=0;i<3;i++){
+            if(i!=2){
+                fprintf(fp, "%d/", ptr->time[i]);
+            }else{
+                fprintf(fp, "%d\n", ptr->time[i]);
+            }
+        }
+        ptr = ptr->next;
+    }
+    fclose(fp);
+}
+
+void LinkedList::login_member(){
     member *mp = member_head;
-    char member_account[20], member_password[20];
+    int member_account;
+    char member_password[20];
     int account_correct = 0, password_correct = 0;   //帳號密碼flag
 
-    printf("請輸入會員身分證字號: ");
-    scanf("%s", member_account);
-    printf("請輸入會員手機末三碼: ");
+    printf("輸入帳號(會員編號): ");
+    scanf("%d", &member_account);
+    printf("輸入密碼(會員身分證末三碼): ");
     scanf("%s", member_password);
 
     while(mp != NULL){
-        if(!strcmp(mp->id_number, member_account)){
-            account_correct = 1;                    //找到帳號(id_number)
-            for(int i=0;i<3;i++){                   //比對密碼(phone末三碼)
-                if(member_password[i] == mp->phone[7+i]){
+        if(mp->id == member_account){ //找到會員
+            account_correct = 1;
+            for(int i=0;i<3;i++){
+                if(member_password[i] == mp->id_number[7+i]){   //比對身分證末三碼
                     password_correct = 1;
                 }else{
                     password_correct = 0;
                     break;
                 }
             }
-            break;                                 //假設身份證字號不重複，僅比對一筆即可，提早結束迴圈
+            break;
         }else{
             mp = mp->next;
         }
     }
 
     if(!account_correct){
-        printf("查無會員!\n");
+        printf("查無帳號!\n");
         system("pause");
         system("cls");
-        return -1;
+        return;
     }else if(!password_correct){
         printf("密碼錯誤!\n");
         system("pause");
         system("cls");
-        return -1;
+        return;
     }else{
         printf("登入成功!\n");
         system("pause");
         system("cls");
-        return 1;
+        member_interface(mp);
     }
 }
 
-int LinkedList::manager_login(){
-    char manager_password[] = "12345678";
+void LinkedList::login_manager(){
+    char manager_password[] = "1234";
     char password[20];
 
-    printf("請輸入管理員密碼: ");
+    printf("請輸入管理員密碼(提示:1234): ");
     scanf("%s", password);
 
     if(!strcmp(password, manager_password)){
         printf("登入成功!\n");
         system("pause");
         system("cls");
-        return 1;
+        manager_interface();
     }else{
         printf("密碼錯誤!\n");
         system("pause");
         system("cls");
-        return -1;
+        return;
     }
 }
 
-/*新增*/
 void LinkedList::insert_member(){
     member *new_member = (member *)malloc(sizeof(member));
 
-    printf("[註冊會員] 請填寫以下資料\n");
-    printf("*姓名: ");
+    printf("註冊會員\n");
+    printf("姓名: ");
     scanf("%s", new_member->name);
-    printf("*生日: ");
+    printf("生日: ");
     scanf("%s", new_member->birthday);
-    printf("*身分證字號: ");
+    printf("身分證字號: ");
     scanf("%s", new_member->id_number);
-    printf("*電話: ");
+    printf("電話: ");
     scanf("%s", new_member->phone);
-    printf("*信箱: ");
+    printf("信箱: ");
     scanf("%s", new_member->email);
-
-    new_member->borrow = 0;                            //會員借閱數量預設為0
-    new_member->pre = NULL;
+    new_member->num_borrow = 0;
     new_member->next = NULL;
 
     if(member_head == NULL){
         new_member->id = 1;                            //第一位會員編號設定1
         member_head = member_tail = new_member;
     }else{
-        new_member->id = (member_tail->id) + 1;        //會員編號為上次編號+1
-        member_tail->next = new_member;                //連結
-        new_member->pre = member_tail;
+        new_member->id = (member_tail->id) + 1;        //會員編號為tail編號+1
+        member_tail->next = new_member;
         member_tail = new_member;
     }
-    printf("\n會員註冊成功!\n\n");
-    num_member++;                                      //會員總數+1
+    num_member++;
 }
+
 void LinkedList::insert_book(){
     book *new_book = (book *)malloc(sizeof(book));
 
-    printf("<< 註冊書籍 >>\n");
-    printf("*請輸入書名: ");
+    printf("註冊書籍\n");
+    printf("書名: ");
     scanf("%s", new_book->name);
-    printf("*請輸入出版社: ");
+    printf("ISBN: ");
+    scanf("%s", new_book->ISBN);
+    printf("出版社: ");
     scanf("%s", new_book->publisher);
-    printf("*請輸入出版日期: ");
+    printf("出版日期: ");
     scanf("%s", new_book->publish_date);
-
-    new_book->state = 0;                       //書籍狀態預設為可借
-    new_book->pre = NULL;
+    new_book->state = 0;
     new_book->next = NULL;
 
     if(book_head == NULL){
-        new_book->id = 1;                      //第一本書籍編號設定1
         book_head = book_tail = new_book;
+        new_book->id = 1;                           //第一本書籍編號設定1
     }else{
-        new_book->id = (book_tail->id) + 1;    //書籍編號為最新編號+1
-        book_tail->next = new_book;            //連結
-        new_book->pre = book_tail;
+        book_tail->next = new_book;
         book_tail = new_book;
+        new_book->id = (book_tail->id) + 1;         //書籍編號為tail編號+1
     }
-    printf("書本註冊成功!\n");
-    num_book++;                                //書籍總數+1
+    num_book++;
+    printf("註冊成功!\n");
 }
 
-void LinkedList::insert_data(){                     //尋找會員，確認會員狀態，尋找書籍，確認書籍狀態
-    data *new_data;
-    member *mp = member_head;
-    book *bp = book_head;
-    int member_id;
+void LinkedList::insert_record(member *mp){
+    book *bp;
     int book_id;
+    time(&t);
+    TIME = localtime(&t);
+
+    printf("要借閱的書籍編號: ");
+    scanf("%d", &book_id);                  //手動輸入書籍編號，依id找書
+    bp = find_book_byid(book_id);
+    if(!bp){
+        printf("找不到書籍編號，借閱失敗\n");
+    }else{
+        record *new_record = (record *)malloc(sizeof(record));
+        new_record->member_id = mp->id;                     //會員編號帶入
+        new_record->book_id = bp->id;                       //書籍編號帶入
+        new_record->time[0] = TIME->tm_year+1900;                //年月日
+        new_record->time[1] = TIME->tm_mon+1;
+        new_record->time[2] = TIME->tm_mday;
+        new_record->next = NULL;
+
+        mp->num_borrow++;                                   //修改會員已借數量、書籍狀態
+        bp->state = 1;
+
+        if(record_head == NULL){
+            record_head = record_tail = new_record;
+            new_record->id = 1;                             //第一筆借閱編號設定1
+        }else{
+            record_tail->next = new_record;
+            record_tail = new_record;
+            new_record->id = (record_tail->id) + 1;         //書籍編號為tail編號+1
+        }
+        num_record++;
+        printf("借閱成功!\n");
+    }
+}
+
+void LinkedList::delete_member(){
+    member *mp, *pre;
+    int delete_target;
     int found = 0;
 
-    printf("請輸入會員編號: ");                    //尋找會員
-    scanf("%d", &member_id);
+    printf("要刪除的會員編號: ");
+    scanf("%d", &delete_target);
+
+    mp = member_head;
     while(mp != NULL){
-        if(mp->id == member_id){
+        if(mp->id==delete_target){
             found = 1;
+            break;
         }else{
+            pre = mp;
             mp = mp->next;
         }
     }
     if(found){
-
-    }else{
-        printf("找不到該會員，請重新輸入!\n");
-        return;
-    }
-
-    scanf("%d", &book_id);
-
-    new_data = (data *)malloc(sizeof(data));        //建立借閱資料
-}
-
-/*刪除*/
-void LinkedList::delete_member(){
-    member *ptr = member_head;
-    member *previous_position;
-    char target_name[20];
-    int found = 0;
-
-    printf("輸入要刪除的會員姓名: ");
-    scanf("%s", target_name);
-
-    while(ptr != NULL){                                 //依名字尋找位置
-        if(!strcmp(ptr->name, target_name)){
-            found = 1;
-            break;
-        }else{
-            ptr = ptr->next;
-        }
-    }
-
-    if(found){                                          //ptr位置的刪除case
-        if(ptr == member_head){                         //頭
+        if(mp == member_head){
             member_head = member_head->next;
-            if(member_head != NULL){                    //防野指標
-                member_head->pre = NULL;
-            }
         }else{
-            if(ptr == member_tail){                     //尾
-                member_tail = member_tail->pre;
+            if(mp == member_tail){
+                member_tail = pre;
                 member_tail->next = NULL;
-            }else{                                      //中間
-                previous_position = ptr->pre;
-                previous_position->next = ptr->next;
+            }else{
+                pre->next = mp->next;
             }
         }
-
-        free(ptr);
-        printf("刪除成功!\n");
-        num_member--;                                   //會員總數-1
+        free(mp);
+        num_member--;
+        printf("找到會員，已刪除!\n");
     }else{
-        printf("找不到該會員姓名，無法刪除!\n");
+        printf("找不到會員，刪除失敗!\n");
     }
 }
 
 void LinkedList::delete_book(){
-    book *ptr = book_head;
-    book *previous_position;
-    char target_name[20];
+    book *bp, *pre;
+    int delete_target;
     int found = 0;
 
-    printf("請輸入書名: ");
-    scanf("%s", target_name);
+    printf("要刪除的書籍編號: ");
+    scanf("%d", delete_target);
 
-    while(ptr != NULL){                                 //依名字尋找位置
-        if(!strcmp(ptr->name, target_name)){
+    bp = book_head;
+    while(bp != NULL){
+        if(bp->id==delete_target){
             found = 1;
             break;
         }else{
-            ptr = ptr->next;
+            pre = bp;
+            bp = bp->next;
         }
     }
-
-    if(found){                                          //ptr位置的刪除case
-        if(ptr == book_head){                           //頭
+    if(found){
+        if(bp == book_head){
             book_head = book_head->next;
-            book_head->pre = NULL;
         }else{
-            if(ptr == book_tail){                       //尾
-                book_tail = book_tail->pre;
+            if(bp == book_tail){
+                book_tail = pre;
                 book_tail->next = NULL;
-            }else{                                      //中間
-                previous_position = ptr->pre;
-                previous_position->next = ptr->next;
+            }else{
+                pre->next = bp->next;
             }
         }
-
-        free(ptr);
-        printf("刪除成功!\n");
-        num_book--;                                   //書籍總數-1
+        free(bp);
+        num_book--;
+        printf("找到書籍，已刪除!");
     }else{
-        printf("找不到該書名，無法刪除!\n");
+        printf("找不到書籍，刪除失敗!\n");
     }
 }
 
-//void LinkedList::delete_data();
+void LinkedList::delete_record(member *mp){
+    record *rp, *pre;
+    book *bp;
+    int book_id;
 
+    printf("要歸還的書籍編號: ");
+    scanf("%d", &book_id);
 
-/*顯示*/
+    bp = book_head;                  //手動輸入書籍編號，依id找書
+    while(bp!=NULL){
+        if(bp->id == book_id){
+            break;
+        }else{
+            bp = bp->next;
+        }
+    }
+
+    rp = record_head;
+    while(rp!=NULL){
+        if(rp->book_id == book_id){
+            break;
+        }else{
+            pre = rp;
+            rp = rp->next;
+        }
+    }
+
+    if(rp){
+        if(rp == record_head){
+            record_head = record_head->next;
+        }else{
+            if(rp == record_tail){
+                record_tail = pre;
+                record_tail->next = NULL;
+            }else{
+                pre->next = rp->next;
+            }
+        }
+        free(rp);
+        mp->num_borrow--;
+        bp->state = 0;
+        num_record--;
+        printf("找到借閱紀錄，歸還成功!\n");
+
+    }else{
+        printf("找不到借閱紀錄，歸還失敗\n");
+    }
+}
+
 void LinkedList::show_member(){
     member *ptr = member_head;
     printf("共有 %d 筆會員資料\n", num_member);
@@ -477,6 +557,7 @@ void LinkedList::show_member(){
         printf("身分證字號: %s\n", ptr->id_number);
         printf("電話: %s\n", ptr->phone);
         printf("信箱: %s\n", ptr->email);
+        printf("已借數量: %d\n", ptr->num_borrow);
         printf("====================\n");
         ptr = ptr->next;
     }
@@ -488,173 +569,204 @@ void LinkedList::show_book(){
     while(ptr != NULL){
         printf("書籍編號: %d\n", ptr->id);
         printf("書名: %s\n", ptr->name);
-        printf("出版社: %s\n", ptr->publisher);
+        printf("ISBN: %s\n", ptr->ISBN);
         printf("出版日期: %s\n", ptr->publish_date);
-        printf("狀態: %s\n", (ptr->state==0) ? "尚未借出，可借閱":"已借出，無法借閱");
+        printf("出版社: %s\n", ptr->publisher);
+        printf("狀態: %s\n", (ptr->state) ? "已借出，無法借閱":"尚未借出，可借閱");
         printf("====================\n");
         ptr = ptr->next;
     }
 }
 
+void LinkedList::show_record(){
+    record *ptr = record_head;
+    printf("共有 %d 筆借閱資料\n", num_record);
+    while(ptr != NULL){
+        printf("借閱編號: %d\n", ptr->id);
+        printf("會員編號: %d\n", ptr->member_id);
+        printf("書籍編號: %d\n", ptr->book_id);
+        printf("====================\n");
+        ptr = ptr->next;
+    }
+}
 
-int main(){
+void LinkedList::check_member_record(member *mp){
+    record *rp;
+
+    rp = record_head;
+    printf("會員已借 %d 本書籍\n", mp->num_borrow);
+    while(rp!=NULL){
+        if(rp->member_id == mp->id){
+            printf("書籍編號: %d\n", rp->book_id);
+            printf("借閱時間: ");
+            for(int i=0;i<3;i++){
+                if(i!=2){
+                    printf("%d/", rp->time[i]);
+                }else{
+                    printf("%d", rp->time[i]);
+                }
+            }
+            printf("==========\n");
+        }
+        rp = rp->next;
+    }
+}
+
+book *LinkedList::find_book_byid(int book_id){
+    book *ptr = book_head;
+
+    while(ptr!=NULL){
+        if(ptr->id==book_id){
+            break;
+        }
+        ptr = ptr->next;
+    }
+    return ptr;
+}
+
+//操作
+void LinkedList::member_interface(member *mp){
     char op;
-    int user, manager, logout;          //flag
-    LinkedList Library_System;
-
-    //開啟，讀檔
-    Library_System.load_member();
-    Library_System.load_book();
+    int log_out=0;
 
     while(1){
-        printf("+------------------------------------------------+\n");
-        printf("+               圖書館書籍借閱系統               +\n");
-        printf("+------------------------------------------------+\n");
-        printf("+      (M)會員登入       |      (R)註冊會員      +\n");
-        printf("+------------------------------------------------+\n");
-        printf("+      (S)管理員登入     |      (Q)結束系統      +\n");
-        printf("+------------------------------------------------+\n");
-        printf("操作> ");
+        printf("(1)借書\n");
+        printf("(2)還書\n");
+        printf("(3)查詢借閱狀況\n");
+        printf("(Q)登出\n");
         scanf(" %c", &op);
-
         switch(op){
-            //會員登入
-            case 'M':
-            case 'm':
-                user = Library_System.member_login();
-                if(user == -1){
-                    main();
-                }else{
-                    while(1){
-                        printf("[會員]\n");
-                        printf("(1)借書\n");
-                        printf("(2)還書\n");
-                        printf("(3)登出\n");
-                        scanf(" %c", &op);
-                        switch(op){
-                            case '1':
-                                break;
-                            case '2':
-                                break;
-                            case '3':
-                                printf("\n已登出!\n");
-                                system("pause");
-                                system("cls");
-                                main();
-                                break;
-                            default:
-                                printf("輸入指令有誤，請重新輸入\n");
-                                system("pause");
-                                system("cls");
-                                break;
-                        }
-                    }
-                }
+            case '1':
+                insert_record(mp);
                 break;
-            //會員註冊
-            case 'R':
-            case 'r':
-                Library_System.insert_member();
+            case '2':
+                delete_record(mp);
                 break;
-
-            //管理員登入
-            case 'S':
-            case 's':
-                manager = Library_System.manager_login();
-                if(manager == -1){
-                    main();
-                }else{
-                    logout = 0;
-                    while(1){
-                        printf("[管理員]\n");
-                        printf("\n會員管理:\n");
-                        printf("(1)新增會員\n");
-                        printf("(2)刪除會員\n");
-                        printf("(3)顯示所有會員\n");
-
-                        printf("\n書籍管理:\n");
-                        printf("(4)新增書籍\n");
-                        printf("(5)刪除書籍\n");
-                        printf("(6)顯示所有書籍\n");
-
-                        printf("\n借閱管理:\n");
-                        printf("(7)新增借閱\n");
-                        printf("(8)刪除借閱\n");
-                        printf("(9)顯示所有借閱\n");
-
-                        printf("\nQ.登出\n> ");
-
-                        scanf(" %c", &op);
-                        switch(op){
-                            //會員管理
-                            case '1':
-                                Library_System.insert_member();
-                                break;
-
-                            case '2':
-                                Library_System.delete_member();
-                                break;
-
-                            case '3':
-                                Library_System.show_member();
-                                break;
-
-                            //書籍管理
-                            case '4':
-                                Library_System.insert_book();
-                                break;
-
-                            case '5':
-                                Library_System.delete_book();
-                                break;
-
-                            case '6':
-                                Library_System.show_book();
-                                break;
-
-                            //資料管理
-                            case '7':
-                                break;
-
-                            case '8':
-                                break;
-
-                            case '9':
-                                break;
-
-                            case 'Q':
-                            case 'q':
-                                Library_System.save_member();              //登出，寫檔
-                                Library_System.save_book();
-                                logout = 1;
-                                printf("\n已登出!\n");
-                                break;
-
-                            default:
-                                printf("輸入指令有誤，請重新輸入\n");
-                                break;
-                        }
-                        if(logout == 1){
-                            break;
-                        }
-                        system("pause");
-                        system("cls");
-                    }
-                }
+            case '3':
+                check_member_record(mp);
                 break;
-
-            //結束，寫檔
             case 'Q':
             case 'q':
-                Library_System.save_member();
-                Library_System.save_book();
-                printf("\n結束系統!\n");
-                return 0;
+                log_out = 1;
+                printf("已登出會員\n");
                 break;
-
             default:
-                printf("輸入指令有誤，請重新輸入\n");
+                printf("指令錯誤!\n");
                 break;
+        }
+        if(log_out) break;
+        system("pause");
+        system("cls");
+    }
+}
+
+void LinkedList::manager_interface(){
+    char op;
+    int log_out=0;
+
+    while(1){
+        printf("會員管理:\n");
+        printf("(1)新增\t");
+        printf("(2)刪除\t");
+        printf("(3)顯示\n");
+
+        printf("書籍管理:\n");
+        printf("(4)新增\t");
+        printf("(5)刪除\t");
+        printf("(6)顯示\n");
+
+        printf("借閱管理:\n");
+        //printf("(7)新增\t");
+        //printf("(8)刪除\t");
+        printf("(9)顯示\n");
+
+        printf("(Q)登出管理員\n");
+        printf("指令: ");
+        scanf(" %c", &op);
+        switch(op){
+            case '1':
+                insert_member();
+                break;
+            case '2':
+                delete_member();
+                break;
+            case '3':
+                show_member();
+                break;
+            case '4':
+                insert_book();
+                break;
+            case '5':
+                delete_book();
+                break;
+            case '6':
+                show_book();
+                break;
+            /*
+            case '7':
+                break;
+            case '8':
+                break;
+            */
+            case '9':
+                show_record();
+                break;
+            case 'Q':
+            case 'q':
+                log_out = 1;
+                printf("已登出會員\n");
+                break;
+            default:
+                printf("指令錯誤!\n");
+                break;
+        }
+        if(log_out) break;
+        system("pause");
+        system("cls");
+    }
+}
+
+int main(){
+    LinkedList Library;
+    char op;
+
+    Library.load_member();
+    Library.load_book();
+    Library.load_record();
+
+    while(1){
+        printf("<<圖書館借閱系統>>\n");
+        printf("(0)查詢本館庫藏\n");
+        printf("(1)註冊會員\n");
+        printf("(2)會員登入\n");
+        printf("(3)管理員登入\n");
+        printf("(4)結束系統\n");
+        printf("指令: ");
+        scanf(" %c", &op);
+        switch(op){
+
+        case '0':
+            Library.show_book();
+            break;
+        case '1':
+            Library.insert_member();
+            printf("\n註冊會員成功!\n");
+            break;
+        case '2':
+            Library.login_member();
+            break;
+        case '3':
+            Library.login_manager();
+            break;
+        case '4':
+            Library.save_member();
+            Library.save_book();
+            Library.save_record();
+            printf("已結束系統\n");
+            return 0;
+        default:
+            printf("指令錯誤!\n");
+            break;
         }
         system("pause");
         system("cls");
